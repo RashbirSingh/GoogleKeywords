@@ -187,46 +187,59 @@ def eternalLoop(df, campnew):
             for each_ad_group in unique_ad_group_list:
                 overallTocreatedict = {}
                 print("Calculating quantiles")
-                _, low, mid, high = df.loc[(df.primaryCampaignName == eachcampaign) &
-                                           (df.ad_group_name == each_ad_group), "clicks"].quantile([0, 0.20, 0.40, 1])
-                if low == mid == high:
-                    overallTocreatedict["campaign_name"] = eachcampaign
-                    overallTocreatedict["ad_group_name"] = each_ad_group + "#Common"
-                    overallTocreatedict["KeywordList"] = list(df.loc[(df.primaryCampaignName == eachcampaign) &
-                                                                     (df.ad_group_name == each_ad_group), "keyword_text"].values)
-                    overallTocreatedict["Bid"] = 500000
-                    overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
-                    if overallTocreatedict["campaign_name"] not in alreadyCreatedCampaign.keys():
-                        overallTocreatedict["campaign_id"] = \
-                            campnew.create_campaign(campaign_budget_name= overallTocreatedict["campaign_budget_name"],
-                                                    campaign_budget_value=50000000,
-                                                    campaign_name=overallTocreatedict["campaign_name"])["campaign_id"]
-                        overallTocreatedict["campaign_created"] = True
-                        alreadyCreatedCampaign[overallTocreatedict["campaign_name"]] = overallTocreatedict["campaign_id"]
-                    else:
-                        overallTocreatedict["campaign_created"] = True
-                        overallTocreatedict["campaign_id"] = alreadyCreatedCampaign[overallTocreatedict["campaign_name"]]
-                    overallTocreatedict["group_id"] = campnew.create_ad_group(campaign_id=overallTocreatedict["campaign_id"],
-                                                                      ad_group_name=overallTocreatedict["ad_group_name"],
-                                                                      bid_amount=overallTocreatedict["Bid"])["ad_group_id"]
-                    overallTocreatedict["Add_group_created"] = True
-                    for keyword in overallTocreatedict["KeywordList"]:
-                        campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
-                                             keyword_text=keyword)
-                    print(overallTocreatedict)
-                    output = output.append(overallTocreatedict, ignore_index=True)
+                # _, low, mid, high = df.loc[(df.primaryCampaignName == eachcampaign) &
+                #                            (df.ad_group_name == each_ad_group), "clicks"].quantile([0, 0.20, 0.40, 1])
+                # if low == mid == high:
+                #     overallTocreatedict["campaign_name"] = eachcampaign
+                #     overallTocreatedict["ad_group_name"] = each_ad_group + "#Common"
+                #     overallTocreatedict["KeywordList"] = list(df.loc[(df.primaryCampaignName == eachcampaign) &
+                #                                                      (df.ad_group_name == each_ad_group), "keyword_text"].values)
+                #     overallTocreatedict["Bid"] = 500000
+                #     overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
+                #     if overallTocreatedict["campaign_name"] not in alreadyCreatedCampaign.keys():
+                #         overallTocreatedict["campaign_id"] = \
+                #             campnew.create_campaign(campaign_budget_name= overallTocreatedict["campaign_budget_name"],
+                #                                     campaign_budget_value=50000000,
+                #                                     campaign_name=overallTocreatedict["campaign_name"])["campaign_id"]
+                #         overallTocreatedict["campaign_created"] = True
+                #         alreadyCreatedCampaign[overallTocreatedict["campaign_name"]] = overallTocreatedict["campaign_id"]
+                #     else:
+                #         overallTocreatedict["campaign_created"] = True
+                #         overallTocreatedict["campaign_id"] = alreadyCreatedCampaign[overallTocreatedict["campaign_name"]]
+                #     overallTocreatedict["group_id"] = campnew.create_ad_group(campaign_id=overallTocreatedict["campaign_id"],
+                #                                                       ad_group_name=overallTocreatedict["ad_group_name"],
+                #                                                       bid_amount=overallTocreatedict["Bid"])["ad_group_id"]
+                #     overallTocreatedict["Add_group_created"] = True
+                #     for keyword in overallTocreatedict["KeywordList"]:
+                #         campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
+                #                              keyword_text=keyword)
+                #     print(overallTocreatedict)
+                #     output = output.append(overallTocreatedict, ignore_index=True)
 
-                else:
+                if:
                     overallTocreatedict = {}
-                    lowList = list(df.loc[(df.primaryCampaignName == eachcampaign) &
-                                          (df.ad_group_name == each_ad_group) &
-                                          (df.clicks <= low), "keyword_text"].values)
-                    midList = list(df.loc[(df.primaryCampaignName == eachcampaign) &
-                                          (df.ad_group_name == each_ad_group) &
-                                          (df.clicks > low) & (df.clicks <= mid), "keyword_text"].values)
-                    highList = list(df.loc[(df.primaryCampaignName == eachcampaign) &
+                    # lowList = list(df.loc[(df.primaryCampaignName == eachcampaign) &
+                    #                       (df.ad_group_name == each_ad_group) &
+                    #                       (df.clicks <= low), "keyword_text"].values)
+                    # midList = list(df.loc[(df.primaryCampaignName == eachcampaign) &
+                    #                       (df.ad_group_name == each_ad_group) &
+                    #                       (df.clicks > low) & (df.clicks <= mid), "keyword_text"].values)
+                    # highList = list(df.loc[(df.primaryCampaignName == eachcampaign) &
+                    #                        (df.ad_group_name == each_ad_group) &
+                    #                        (df.clicks > mid), "keyword_text"].values)
+
+                    highList = list(df.loc[((df.primaryCampaignName == eachcampaign) &
                                            (df.ad_group_name == each_ad_group) &
-                                           (df.clicks > mid), "keyword_text"].values)
+                                           (df.QualityScore >= 6) &
+                                           (df.clicks >= 100) &
+                                           (df.CTR >= 4)), "keyword_text"].values)
+
+                    midList = list(df.loc[~((df.primaryCampaignName == eachcampaign) &
+                                            (df.ad_group_name == each_ad_group) &
+                                            (df.QualityScore >= 6) &
+                                            (df.clicks >= 100) &
+                                            (df.CTR >= 4)), "keyword_text"].values)
+
 
                     if len(highList) > 0:
                         overallTocreatedict["campaign_name"] = eachcampaign
@@ -256,34 +269,34 @@ def eternalLoop(df, campnew):
                             campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
                                                  keyword_text=keyword)
 
-                    if len(midList) > 0:
-                        overallTocreatedict["campaign_name"] = eachcampaign
-                        overallTocreatedict["ad_group_name"] = each_ad_group + "#Mid"
-                        overallTocreatedict["KeywordList"] = midList
-                        overallTocreatedict["Bid"] = 600000
-                        overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
-                        if overallTocreatedict["campaign_name"] not in alreadyCreatedCampaign.keys():
-                            overallTocreatedict["campaign_id"] = \
-                            campnew.create_campaign(campaign_budget_name=overallTocreatedict["campaign_budget_name"],
-                                            campaign_budget_value=50000000,
-                                            campaign_name=overallTocreatedict["campaign_name"])["campaign_id"]
-                            overallTocreatedict["campaign_created"] = True
-                            alreadyCreatedCampaign[overallTocreatedict["campaign_name"]] = overallTocreatedict["campaign_id"]
-                        else:
-                            overallTocreatedict["campaign_created"] = True
-                            overallTocreatedict["campaign_id"] = alreadyCreatedCampaign[overallTocreatedict["campaign_name"]]
-
-                        overallTocreatedict["group_id"] = campnew.create_ad_group(campaign_id=overallTocreatedict["campaign_id"],
-                                                                          ad_group_name=overallTocreatedict["ad_group_name"],
-                                                                          bid_amount=overallTocreatedict["Bid"])["ad_group_id"]
-                        overallTocreatedict["Add_group_created"] = True
-                        print(overallTocreatedict)
-                        output = output.append(overallTocreatedict, ignore_index=True)
-
-
-                        for keyword in overallTocreatedict["KeywordList"]:
-                            campnew.add_keywords(ad_group_id = overallTocreatedict["group_id"],
-                                                 keyword_text = keyword)
+                    # if len(midList) > 0:
+                    #     overallTocreatedict["campaign_name"] = eachcampaign
+                    #     overallTocreatedict["ad_group_name"] = each_ad_group + "#Mid"
+                    #     overallTocreatedict["KeywordList"] = midList
+                    #     overallTocreatedict["Bid"] = 600000
+                    #     overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
+                    #     if overallTocreatedict["campaign_name"] not in alreadyCreatedCampaign.keys():
+                    #         overallTocreatedict["campaign_id"] = \
+                    #         campnew.create_campaign(campaign_budget_name=overallTocreatedict["campaign_budget_name"],
+                    #                         campaign_budget_value=50000000,
+                    #                         campaign_name=overallTocreatedict["campaign_name"])["campaign_id"]
+                    #         overallTocreatedict["campaign_created"] = True
+                    #         alreadyCreatedCampaign[overallTocreatedict["campaign_name"]] = overallTocreatedict["campaign_id"]
+                    #     else:
+                    #         overallTocreatedict["campaign_created"] = True
+                    #         overallTocreatedict["campaign_id"] = alreadyCreatedCampaign[overallTocreatedict["campaign_name"]]
+                    #
+                    #     overallTocreatedict["group_id"] = campnew.create_ad_group(campaign_id=overallTocreatedict["campaign_id"],
+                    #                                                       ad_group_name=overallTocreatedict["ad_group_name"],
+                    #                                                       bid_amount=overallTocreatedict["Bid"])["ad_group_id"]
+                    #     overallTocreatedict["Add_group_created"] = True
+                    #     print(overallTocreatedict)
+                    #     output = output.append(overallTocreatedict, ignore_index=True)
+                    #
+                    #
+                    #     for keyword in overallTocreatedict["KeywordList"]:
+                    #         campnew.add_keywords(ad_group_id = overallTocreatedict["group_id"],
+                    #                              keyword_text = keyword)
 
                     if len(lowList) > 0:
 

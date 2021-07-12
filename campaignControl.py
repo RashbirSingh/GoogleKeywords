@@ -147,3 +147,43 @@ class campaign:
         #     "Created keyword "
         #     f"{ad_group_criterion_response.results[0].resource_name}."
         # )
+
+    def create_ad(self, ad_group_id,
+                  number_of_ads,
+                  addURL = "http://www.staffing.com.au",
+                  addDescription = "Come try us!",
+                  addExpandedText =  "Best staffing company in the game"):
+        customer_id = self.customer_id
+        ad_group_ad_service = self.client.get_service("AdGroupAdService")
+        ad_group_service = self.client.get_service("AdGroupService")
+
+        ad_group_ad_operations = []
+        for i in range(number_of_ads):
+            # Create ad group ad.
+            ad_group_ad_operation = self.client.get_type("AdGroupAdOperation")
+            ad_group_ad = ad_group_ad_operation.create
+            ad_group_ad.ad_group = ad_group_service.ad_group_path(
+                customer_id, ad_group_id
+            )
+            ad_group_ad.status = self.client.enums.AdGroupAdStatusEnum.PAUSED
+
+            # Set expanded text ad info
+            ad_group_ad.ad.final_urls.append(addURL)
+            ad_group_ad.ad.expanded_text_ad.description = addDescription
+            ad_group_ad.ad.expanded_text_ad.headline_part1 = (
+                f"Add " + str(i) + " for staffing"
+            )
+            ad_group_ad.ad.expanded_text_ad.headline_part2 = (
+                addExpandedText
+            )
+            ad_group_ad.ad.expanded_text_ad.path1 = "all-inclusive"
+            ad_group_ad.ad.expanded_text_ad.path2 = "deals"
+
+            ad_group_ad_operations.append(ad_group_ad_operation)
+
+        ad_group_ad_response = ad_group_ad_service.mutate_ad_group_ads(
+            customer_id=customer_id, operations=ad_group_ad_operations
+        )
+
+        for result in ad_group_ad_response.results:
+            print(f'Created ad group ad "{result.resource_name}".')
