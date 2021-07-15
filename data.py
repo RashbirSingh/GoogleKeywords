@@ -1,33 +1,19 @@
-# import boto3
 import os
 import numpy as np
 from google.ads.googleads.client import GoogleAdsClient
-from campaignControl import campaign
-from pprint import pprint
+from campaignControl import campaign as CCL
 import pandas as pd
-# import ray
-# import modin.pandas as pd
-from dotenv import dotenv_values
 
 os.environ["MODIN_ENGINE"] = "ray"
 
 
-# config = dotenv_values(".env")
-# os.environ["aws_access_key_id"] = config["aws_access_key_id"]
-# os.environ["aws_secret_access_key"] = config["aws_secret_access_key"]
-# os.environ["region_name"] = config["region_name"]
-
-
-# [START get_keyword_stats]
 
 def maincode(client, customer_id, camp, campnew,
              start_date="'2021-01-01'", end_date="'2021-06-30'"):
-    # ray.shutdown()
-    # # ray.init()
-    # ray.init(num_cpus=4)
+
 
     dataList = []
-    campaignNameDataDataFrame = []
+
     uniqueCampaignList = []
     ga_service = client.get_service("GoogleAdsService")
 
@@ -59,35 +45,7 @@ def maincode(client, customer_id, camp, campnew,
     FROM keyword_view
     WHERE
         segments.date BETWEEN """ + start_date + " AND " + end_date + \
-            " ORDER BY metrics.impressions DESC LIMIT 1000"
-
-    # query = """
-    #     SELECT
-    #       campaign.id,
-    #       campaign.name,
-    #       ad_group.id,
-    #       ad_group.name,
-    #       ad_group_criterion.criterion_id,
-    #       ad_group_criterion.keyword.text,
-    #       ad_group_criterion.keyword.match_type,
-    #       metrics.impressions,
-    #       metrics.clicks,
-    #       metrics.cost_micros,
-    #       metrics.average_cpm,
-    #       metrics.ctr,
-    #       metrics.benchmark_average_max_cpc,
-    #       metrics.historical_quality_score,
-    #       metrics.search_impression_share,
-    #       metrics.search_click_share,
-    #       metrics.bounce_rate,
-    #       metrics.all_conversions
-    #     FROM keyword_view WHERE segments.date BETWEEN '2021-06-29' AND '2021-06-30'
-    #     AND campaign.advertising_channel_type = 'SEARCH'
-    #     AND ad_group.status = 'ENABLED'
-    #     AND ad_group_criterion.status IN ('ENABLED', 'PAUSED')
-    #     ORDER BY metrics.impressions DESC"""
-
-    # Issues a search request using streaming.
+            " ORDER BY metrics.impressions DESC LIMIT 100000"
 
     search_request = client.get_type("SearchGoogleAdsStreamRequest")
     search_request.customer_id = customer_id
@@ -136,43 +94,15 @@ def maincode(client, customer_id, camp, campnew,
             dataList.append(data)
 
     infoDf = pd.DataFrame(dataList)
-    # infoDf["ad_group_name"] = infoDf["ad_group_name"].str.replace("^[0-9]* ", "", regex =True)
-    # finalinfoDf = pd.merge(infoDf, categoryDf, left_on="ad_group_name", right_on="ID & Ad Group", how='outer')
-    # finalinfoDf = finalinfoDf.loc[~finalinfoDf.campaign_name.isna(), :]
+
     finalinfoDf = infoDf.loc[~infoDf.campaign_name.isna(), :]
-    # finalinfoDf.loc[finalinfoDf.Category.isna(), "Category"] = "Other"
     finalinfoDf.campaign_name = finalinfoDf.campaign_name.str.replace(" - ", "#", regex=True)
-    # finalinfoDf['primaryCampaignName'] = finalinfoDf[['campaign_name', 'Category']].apply(lambda x: '#'.join(x), axis=1)
     finalinfoDf['primaryCampaignName'] = finalinfoDf['campaign_name']
     finalinfoDf = finalinfoDf.drop_duplicates()
-    # for index, row in finalinfoDf.iterrows():
-    #     print(row["campaign_name"]+"#"+row["Category"])
 
-    # for uniquecamp in finalinfoDf.primaryCampaignName.unique():
-    #     campnew.create_campaign(campaign_name=uniquecamp,
-    #                             campaign_budget_value=500000,
-    #                             campaign_budget_name=uniquecamp + "#Budget")
-
-    # finalinfoDf.to_csv("finalinfoDf.csv")
+    finalinfoDf.to_csv("finalinfoDf.csv")
     eternalLoop(finalinfoDf, campnew)
 
-    # for eachcamp in uniqueCampaignList:
-    #     campaignNameData = {}
-    #     campaignNameData["state"] = eachcamp.split(" - ")[0]
-    #     if len(campaignNameData["state"]) > 0:
-    #         campaignNameData["location"] = eachcamp.split(" - ")[1].split(" #")[0]
-    #         campaignNameData["businessUnit"] = eachcamp.split(" - ")[1].split(" #")[1]
-    #     else:
-    #         campaignNameData["location"] = np.nan
-    #         campaignNameData["businessUnit"] = np.nan
-    #     campaignNameDataDataFrame.append(campaignNameData)
-    #
-    #     pd.DataFrame(campaignNameDataDataFrame).to_csv("campaignNameDataDataFrame.csv")
-
-    # df = pd.DataFrame(dataList)
-    # df.to_csv("DemoData.csv")
-
-    # [END get_keyword_stats]
 
 
 def eternalLoop(df, campnew):
@@ -184,7 +114,7 @@ def eternalLoop(df, campnew):
         print("Making calculations for ad_group_name")
         unique_ad_group_list = df.loc[df.primaryCampaignName == eachcampaign, "ad_group_name"].unique()
         for each_ad_group in unique_ad_group_list:
-            overallTocreatedict = {}
+
             clicksNintyPercentile = df.loc[(df.primaryCampaignName == eachcampaign) &
                                            (df.ad_group_name == each_ad_group) &
                                            (df.clicks > 0), "clicks"].quantile(0.90)
@@ -194,33 +124,6 @@ def eternalLoop(df, campnew):
             CTRFiftyPercentile = df.loc[(df.primaryCampaignName == eachcampaign) &
                                         (df.ad_group_name == each_ad_group) &
                                         (df.CTR > 0), "CTR"].quantile(0.50)
-
-            # if low == mid == high:
-            #     overallTocreatedict["campaign_name"] = eachcampaign
-            #     overallTocreatedict["ad_group_name"] = each_ad_group + "#Common"
-            #     overallTocreatedict["KeywordList"] = list(df.loc[(df.primaryCampaignName == eachcampaign) &
-            #                                                      (df.ad_group_name == each_ad_group), "keyword_text"].values)
-            #     overallTocreatedict["Bid"] = 500000
-            #     overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
-            #     if overallTocreatedict["campaign_name"] not in alreadyCreatedCampaign.keys():
-            #         overallTocreatedict["campaign_id"] = \
-            #             campnew.create_campaign(campaign_budget_name= overallTocreatedict["campaign_budget_name"],
-            #                                     campaign_budget_value=50000000,
-            #                                     campaign_name=overallTocreatedict["campaign_name"])["campaign_id"]
-            #         overallTocreatedict["campaign_created"] = True
-            #         alreadyCreatedCampaign[overallTocreatedict["campaign_name"]] = overallTocreatedict["campaign_id"]
-            #     else:
-            #         overallTocreatedict["campaign_created"] = True
-            #         overallTocreatedict["campaign_id"] = alreadyCreatedCampaign[overallTocreatedict["campaign_name"]]
-            #     overallTocreatedict["group_id"] = campnew.create_ad_group(campaign_id=overallTocreatedict["campaign_id"],
-            #                                                       ad_group_name=overallTocreatedict["ad_group_name"],
-            #                                                       bid_amount=overallTocreatedict["Bid"])["ad_group_id"]
-            #     overallTocreatedict["Add_group_created"] = True
-            #     for keyword in overallTocreatedict["KeywordList"]:
-            #         campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
-            #                              keyword_text=keyword)
-            #     print(overallTocreatedict)
-            #     output = output.append(overallTocreatedict, ignore_index=True)
 
             overallTocreatedict = {}
 
@@ -249,9 +152,6 @@ def eternalLoop(df, campnew):
                 midDataframe = featureRichMidDataFrame.keyword_text
                 midList = midDataframe.shape[0]
 
-                # lowDataframe = df.loc[(df.primaryCampaignName == eachcampaign) &
-                #                       (df.ad_group_name == each_ad_group) &
-                #                       (df.QualityScore <= 5), "keyword_text"]
 
                 union = pd.Series(np.union1d(universeDataFrame.keyword_text, highDataFrame))
                 intersect = pd.Series(np.intersect1d(universeDataFrame.keyword_text, highDataFrame))
@@ -298,7 +198,7 @@ def eternalLoop(df, campnew):
                 lowDataframe = union[~union.isin(intersect)]
                 lowList = lowDataframe.shape[0]
 
-                featureRichLowDataFrame = universeDataFrame.loc[universeDataFrame.index == lowDataframe.index, :]
+                featureRichLowDataFrame = universeDataFrame.loc[universeDataFrame.index.isin(lowDataframe.index), :]
 
             if highList > 0:
                 overallTocreatedict["campaign_name"] = eachcampaign
@@ -307,7 +207,7 @@ def eternalLoop(df, campnew):
 
                 bidValue = int(universeDataFrame.top_of_page_cpc_micros.mean()) - (
                         int(universeDataFrame.top_of_page_cpc_micros.mean()) % 10000)
-                if bidValue == 0:
+                if (bidValue == 0) or (bidValue < 10000):
                     bidValue = 10000
                 overallTocreatedict["Bid"] = bidValue
                 overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
@@ -342,12 +242,13 @@ def eternalLoop(df, campnew):
                 overallTocreatedict["ad_group_name"] = each_ad_group + "#Mid"
                 overallTocreatedict["KeywordList"] = midDataframe.tolist()
 
-                bidValue = int(universeDataFrame.top_of_page_cpc_micros.mean()) - (
-                        int(universeDataFrame.top_of_page_cpc_micros.mean()) % 10000) * 0.75
-                if bidValue == 0:
+                bidValue = (int(universeDataFrame.top_of_page_cpc_micros.mean()) - (
+                        int(universeDataFrame.top_of_page_cpc_micros.mean()) % 10000)) * 0.75
+                bidValue = int(bidValue) - int(bidValue % 10000)
+                if (bidValue == 0) or (bidValue < 10000):
                     bidValue = 10000
-                elif bidValue > 300000:
-                    bidValue = 300000
+                elif bidValue > 3000000:
+                    bidValue = 3000000
 
                 overallTocreatedict["Bid"] = bidValue
                 overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
@@ -383,19 +284,22 @@ def eternalLoop(df, campnew):
                 overallTocreatedict["ad_group_name"] = each_ad_group + "#Low"
                 overallTocreatedict["KeywordList"] = lowDataframe.tolist()
 
-                threshold = (int(universeDataFrame.top_of_page_cpc_micros.mean()) - (
-                        int(universeDataFrame.top_of_page_cpc_micros.mean()) % 10000) * 0.75) * 0.33
+                threshold = ((int(universeDataFrame.top_of_page_cpc_micros.mean()) - (
+                        int(universeDataFrame.top_of_page_cpc_micros.mean()) % 10000)) * 0.75) * 0.33
 
                 avgLowCPC = featureRichLowDataFrame.average_cpc.mean()
-                if avgLowCPC < threshold:
-                    bidValue = avgLowCPC
 
-                if bidValue == 0:
+                if avgLowCPC > threshold:
+                    bidValue = threshold
+
+                bidValue = int(bidValue) - int(bidValue % 10000)
+
+                if (bidValue == 0) or (bidValue < 10000):
                     bidValue = 10000
-                elif bidValue >= 300000:
-                    bidValue = 300000
+                elif bidValue >= 3000000:
+                    bidValue = 3000000
 
-                overallTocreatedict["Bid"] = 500000
+                overallTocreatedict["Bid"] = bidValue
                 overallTocreatedict["campaign_budget_name"] = overallTocreatedict["campaign_name"] + "#Budget"
                 if overallTocreatedict["campaign_name"] not in alreadyCreatedCampaign.keys():
                     overallTocreatedict["campaign_id"] = \
@@ -428,13 +332,12 @@ def eternalLoop(df, campnew):
 
 
 if __name__ == "__main__":
-    # GoogleAdsClient will read the google-ads.yaml configuration file in the
-    # home directory if none is specified.
+
     googleads_client = GoogleAdsClient.load_from_storage("googleads.yaml")
     newClient = "9814114286"
     oldClient = "9025864929"
-    camp = campaign()
-    campnew = campaign(customer_id="9814114286")
+    camp = CCL()
+    campnew = CCL(customer_id="9814114286")
     maincode(client=googleads_client,
              customer_id=oldClient,
              start_date="'2021-05-01'",

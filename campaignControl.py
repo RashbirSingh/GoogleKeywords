@@ -97,7 +97,7 @@ class campaign:
         ad_group.type_ = client.get_type(
             "AdGroupTypeEnum"
         ).AdGroupType.SEARCH_STANDARD
-        ad_group.cpc_bid_micros = bid_amount
+        ad_group.cpc_bid_micros = int(bid_amount)
 
         # Add the ad group.
         ad_group_response = ad_group_service.mutate_ad_groups(
