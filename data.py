@@ -1,23 +1,19 @@
-import os
 import numpy as np
 from google.ads.googleads.client import GoogleAdsClient
 from campaignControl import campaign as CCL
 import pandas as pd
 
-os.environ["MODIN_ENGINE"] = "ray"
-
-
 
 def maincode(client, customer_id, camp, campnew,
-             start_date="'2021-01-01'", end_date="'2021-06-30'"):
-
-
+             start_date="'2021-01-01'", end_date="'2021-06-30'",
+             setlimit=0):
     dataList = []
 
     uniqueCampaignList = []
     ga_service = client.get_service("GoogleAdsService")
 
-    query = """
+    if setlimit != 0:
+        query = """
     SELECT
         metrics.all_conversions,
         metrics.average_cpc,
@@ -45,7 +41,37 @@ def maincode(client, customer_id, camp, campnew,
     FROM keyword_view
     WHERE
         segments.date BETWEEN """ + start_date + " AND " + end_date + \
-            " ORDER BY metrics.impressions DESC LIMIT 100000"
+                " ORDER BY metrics.impressions DESC LIMIT " + str(setlimit)
+    else:
+        query = """
+    SELECT
+        metrics.all_conversions,
+        metrics.average_cpc,
+        metrics.bounce_rate,
+        metrics.clicks,
+        keyword_view.resource_name,
+        metrics.ctr,
+        metrics.cost_micros,
+        metrics.impressions,
+        metrics.search_impression_share,
+        metrics.search_click_share,
+        ad_group_criterion.quality_info.quality_score,
+        ad_group.campaign,
+        ad_group.cpc_bid_micros,
+        ad_group_criterion.position_estimates.top_of_page_cpc_micros,
+        campaign.start_date,
+        campaign.resource_name,
+        campaign.name,
+        campaign.id,
+        ad_group_criterion.status,
+        ad_group_criterion.keyword.text,
+        ad_group.name,
+        campaign.status,
+        ad_group.id
+    FROM keyword_view
+    WHERE
+        segments.date BETWEEN """ + start_date + " AND " + end_date + \
+                " ORDER BY metrics.impressions DESC"""
 
     search_request = client.get_type("SearchGoogleAdsStreamRequest")
     search_request.customer_id = customer_id
@@ -86,7 +112,6 @@ def maincode(client, customer_id, camp, campnew,
             data["campaign_start_date"] = campaign.start_date
             data["campaign_resource_name"] = campaign.resource_name
             data["top_of_page_cpc_micros"] = ad_group_criterion.position_estimates.top_of_page_cpc_micros
-            # print(data)
 
             if campaign.name not in uniqueCampaignList:
                 uniqueCampaignList.append(campaign.name)
@@ -102,7 +127,6 @@ def maincode(client, customer_id, camp, campnew,
 
     finalinfoDf.to_csv("finalinfoDf.csv")
     eternalLoop(finalinfoDf, campnew)
-
 
 
 def eternalLoop(df, campnew):
@@ -136,6 +160,7 @@ def eternalLoop(df, campnew):
                       (df.ad_group_name == each_ad_group) &
                       (df.QualityScore > 0), "keyword_text"].shape[0] > 0:
 
+                ##--------------------------------------------------HIGH LIST----------------------------------------------------------
                 featureRichHighDataframe = df.loc[(df.primaryCampaignName == eachcampaign) &
                                                   (df.ad_group_name == each_ad_group) &
                                                   (df.QualityScore > 7), ["keyword_text",
@@ -143,7 +168,7 @@ def eternalLoop(df, campnew):
                                                                           "average_cpc"]]
                 highDataFrame = featureRichHighDataframe.keyword_text
                 highList = highDataFrame.shape[0]
-
+                ##--------------------------------------------------MID LIST----------------------------------------------------------
                 featureRichMidDataFrame = df.loc[(df.primaryCampaignName == eachcampaign) &
                                                  (df.ad_group_name == each_ad_group) &
                                                  (df["QualityScore"] > 5) & (df["QualityScore"] <= 7), ["keyword_text",
@@ -151,22 +176,19 @@ def eternalLoop(df, campnew):
                                                                                                         "average_cpc"]]
                 midDataframe = featureRichMidDataFrame.keyword_text
                 midList = midDataframe.shape[0]
-
-
+                ##--------------------------------------------------LOW LIST----------------------------------------------------------
                 union = pd.Series(np.union1d(universeDataFrame.keyword_text, highDataFrame))
                 intersect = pd.Series(np.intersect1d(universeDataFrame.keyword_text, highDataFrame))
                 lowDataframe = union[~union.isin(intersect)]
-
                 union = pd.Series(np.union1d(lowDataframe, midDataframe))
                 intersect = pd.Series(np.intersect1d(lowDataframe, midDataframe))
                 lowDataframe = union[~union.isin(intersect)]
 
                 lowList = lowDataframe.shape[0]
-
                 featureRichLowDataFrame = universeDataFrame[~universeDataFrame.index.isin(lowDataframe.index)]
 
             else:
-
+                ##--------------------------------------------------HIGH LIST----------------------------------------------------------
                 featureRichHighDataframe = df.loc[(df.primaryCampaignName == eachcampaign) &
                                                   (df.ad_group_name == each_ad_group) &
                                                   (df.clicks > clicksNintyPercentile) &
@@ -176,7 +198,7 @@ def eternalLoop(df, campnew):
                                                                                   "average_cpc"]]
                 highDataFrame = featureRichHighDataframe.keyword_text
                 highList = highDataFrame.shape[0]
-
+                ##--------------------------------------------------MID LIST----------------------------------------------------------
                 featureRichMidDataFrame = df.loc[(df.primaryCampaignName == eachcampaign) &
                                                  (df.ad_group_name == each_ad_group) &
                                                  (df.clicks <= clicksNintyPercentile) &
@@ -188,18 +210,18 @@ def eternalLoop(df, campnew):
                                                                 "average_cpc"]]
                 midDataframe = featureRichMidDataFrame.keyword_text
                 midList = midDataframe.shape[0]
-
+                ##--------------------------------------------------LOW LIST----------------------------------------------------------
                 union = pd.Series(np.union1d(universeDataFrame.keyword_text, highDataFrame))
                 intersect = pd.Series(np.intersect1d(universeDataFrame.keyword_text, highDataFrame))
                 lowDataframe = union[~union.isin(intersect)]
-
                 union = pd.Series(np.union1d(lowDataframe, midDataframe))
                 intersect = pd.Series(np.intersect1d(lowDataframe, midDataframe))
                 lowDataframe = union[~union.isin(intersect)]
-                lowList = lowDataframe.shape[0]
 
+                lowList = lowDataframe.shape[0]
                 featureRichLowDataFrame = universeDataFrame.loc[universeDataFrame.index.isin(lowDataframe.index), :]
 
+            ##--------------------------------------------------ASSESING HIGH LIST----------------------------------------------------------
             if highList > 0:
                 overallTocreatedict["campaign_name"] = eachcampaign
                 overallTocreatedict["ad_group_name"] = each_ad_group + "#High"
@@ -235,8 +257,10 @@ def eternalLoop(df, campnew):
                         campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
                                              keyword_text=keyword)
                     except:
+                        print("Some error")
                         pass
 
+            ##--------------------------------------------------ASSESING MID LIST----------------------------------------------------------
             if midList > 0:
                 overallTocreatedict["campaign_name"] = eachcampaign
                 overallTocreatedict["ad_group_name"] = each_ad_group + "#Mid"
@@ -276,8 +300,10 @@ def eternalLoop(df, campnew):
                         campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
                                              keyword_text=keyword)
                     except:
+                        print("Some error")
                         pass
 
+            ##--------------------------------------------------ASSESING LOW LIST----------------------------------------------------------
             if lowList > 0:
 
                 overallTocreatedict["campaign_name"] = eachcampaign
@@ -326,13 +352,13 @@ def eternalLoop(df, campnew):
                         campnew.add_keywords(ad_group_id=overallTocreatedict["group_id"],
                                              keyword_text=keyword)
                     except:
+                        print("Some error")
                         pass
 
     output.to_csv("output.csv")
 
 
 if __name__ == "__main__":
-
     googleads_client = GoogleAdsClient.load_from_storage("googleads.yaml")
     newClient = "9814114286"
     oldClient = "9025864929"
@@ -340,6 +366,8 @@ if __name__ == "__main__":
     campnew = CCL(customer_id="9814114286")
     maincode(client=googleads_client,
              customer_id=oldClient,
-             start_date="'2021-05-01'",
-             end_date="'2021-07-13'",
-             camp=camp, campnew=campnew)
+             start_date="'2021-03-01'",
+             end_date="'2021-07-21'",
+             camp=camp, campnew=campnew,
+             setlimit=0)
+

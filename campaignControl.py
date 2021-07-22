@@ -1,21 +1,19 @@
 from google.ads.googleads.client import GoogleAdsClient
 import datetime
-from dotenv import dotenv_values
-config = dotenv_values(".env")
+
 
 class campaign:
 
-    def __init__(self, client_cred_path = "googleads.yaml",
+    def __init__(self, client_cred_path="googleads.yaml",
                  customer_id="9025864929"):
 
         self.client = GoogleAdsClient.load_from_storage(client_cred_path)
         self.customer_id = customer_id
 
-
     def create_campaign(self,
-                        campaign_budget_name = "DemoTestBudget",
-                        campaign_budget_value = 500000,
-                        campaign_name = "DemoCampaign"):
+                        campaign_budget_name="DemoTestBudget",
+                        campaign_budget_value=500000,
+                        campaign_name="DemoCampaign"):
 
         _DATE_FORMAT = "%Y%m%d"
         data = {}
@@ -77,11 +75,10 @@ class campaign:
         data["campaign_id"] = campaign_data[3]
         return data
 
-
     def create_ad_group(self,
                         campaign_id,
-                        ad_group_name = "DemoAddGroup",
-                        bid_amount = 10000000):
+                        ad_group_name="DemoAddGroup",
+                        bid_amount=10000000):
         data = {}
         client = self.client
         customer_id = self.customer_id
@@ -149,37 +146,44 @@ class campaign:
         # )
 
     def create_ad(self, ad_group_id,
-                  number_of_ads,
-                  addURL = "http://www.staffing.com.au",
-                  addDescription = "Come try us!",
-                  addExpandedText =  "Best staffing company in the game"):
+                  headlineOne,
+                  headlineTwo,
+                  headlineThree,
+                  descriptionOne,
+                  descriptionTwo,
+                  addURL="http://www.staffing.com.au",
+                  addDescription="Come try us!",
+                  addExpandedText="Best staffing company in the game"):
         customer_id = self.customer_id
         ad_group_ad_service = self.client.get_service("AdGroupAdService")
         ad_group_service = self.client.get_service("AdGroupService")
 
         ad_group_ad_operations = []
-        for i in range(number_of_ads):
-            # Create ad group ad.
-            ad_group_ad_operation = self.client.get_type("AdGroupAdOperation")
-            ad_group_ad = ad_group_ad_operation.create
-            ad_group_ad.ad_group = ad_group_service.ad_group_path(
-                customer_id, ad_group_id
-            )
-            ad_group_ad.status = self.client.enums.AdGroupAdStatusEnum.PAUSED
+        # Create ad group ad.
+        ad_group_ad_operation = self.client.get_type("AdGroupAdOperation")
+        ad_group_ad = ad_group_ad_operation.create
+        ad_group_ad.ad_group = ad_group_service.ad_group_path(
+            customer_id, ad_group_id
+        )
+        ad_group_ad.status = self.client.enums.AdGroupAdStatusEnum.PAUSED
 
-            # Set expanded text ad info
-            ad_group_ad.ad.final_urls.append(addURL)
-            ad_group_ad.ad.expanded_text_ad.description = addDescription
-            ad_group_ad.ad.expanded_text_ad.headline_part1 = (
-                f"Add " + str(i) + " for staffing"
-            )
-            ad_group_ad.ad.expanded_text_ad.headline_part2 = (
-                addExpandedText
-            )
-            ad_group_ad.ad.expanded_text_ad.path1 = "all-inclusive"
-            ad_group_ad.ad.expanded_text_ad.path2 = "deals"
+        # Set expanded text ad info
+        ad_group_ad.ad.final_urls.append(addURL)
+        ad_group_ad.ad.expanded_text_ad.description = descriptionOne
+        ad_group_ad.ad.expanded_text_ad.description2 = descriptionTwo
+        ad_group_ad.ad.expanded_text_ad.headline_part1 = (
+                headlineOne
+        )
+        ad_group_ad.ad.expanded_text_ad.headline_part2 = (
+            headlineTwo
+        )
+        ad_group_ad.ad.expanded_text_ad.headlinePart3 = (
+            headlineThree
+        )
+        # ad_group_ad.ad.expanded_text_ad.path1 = "all-inclusive"
+        # ad_group_ad.ad.expanded_text_ad.path2 = "deals"
 
-            ad_group_ad_operations.append(ad_group_ad_operation)
+        ad_group_ad_operations.append(ad_group_ad_operation)
 
         ad_group_ad_response = ad_group_ad_service.mutate_ad_group_ads(
             customer_id=customer_id, operations=ad_group_ad_operations
